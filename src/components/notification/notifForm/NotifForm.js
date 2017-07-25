@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
-import { reduxForm, Field,FieldArray } from 'redux-form'
+import { reduxForm, Field,FieldArray,formValueSelector,getFormValues } from 'redux-form'
 import Dialog from 'material-ui/Dialog';
+import Divider from 'material-ui/Divider';
 import { Map, Marker, Popup, TileLayer } from 'react-leaflet';
 import FlatButton from 'material-ui/FlatButton';
 import { connect } from 'react-redux';
@@ -26,6 +27,8 @@ class notifForm extends Component {
     console.log("notif State " + JSON.stringify(this.state));
     this.state = {
       notif: {},
+      value:1,
+     
     };
   }
 
@@ -35,9 +38,46 @@ class notifForm extends Component {
   componentWillReceiveProps(nextProps){
     console.log("notif form props " + JSON.stringify(nextProps));
   }
+  
+
+handleChange = (event,index, value) => {
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+ 
+              return sleep(100).then(() => {
+               if(this.props.notiftype===1 && this.props.facebooknum)
+               {
+               
+                 this.props.change('url','https://graph.facebook.com/v2.6/me/messages')
+               this.props.change('payload', '{ %22phone_number%22:%22'+this.props.facebooknum+'%22 }, %22message%22: {%22text%22:%22Waziup: humidity too high: \${id} value is \${SM1}%22}')
+               this.props.change('qs','access_token:EAAIcoXbuoZBgBANLgZCViOLxWPJtsIn1El4fasUC75LwNxfZCnoCrEwLLt6obg4HZAzhPt1aTPpAYJaKAx6ir07POprw22ltnpHZARBhVVg3E3INbfeiZAmqCRhyqHQUW3GJmPSpUB0gQpHKCy1IcvThUPgw8RTrXEfsKqjiUmzwZDZD')
+              }
+              else
+              { 
+                if(this.props.notiftype===2)
+                 {
+           
+              this.props.change('url','https://api.plivo.com/v1/Account/MAMDA5ZDJIMDM1NZVMZD/Message/')
+              this.props.change('payload','{ \"src\": \"00393806412092\", \"dst\": \"00393806412093\", \"text\": \"WaterSense: Field is too dry. ${id} humidity value is ${SM1} \"}')
+                       this.props.change('qs','')
+  
+          }
+            else
+            {
+                alert('You must give a phone number')
+                                 this.props.change('url','')
+                                  this.props.change('payload', '')
+               this.props.change('qs','')
+
+             
+               }
+              }
+              })
+  };
+
+
 
   render() {
-    const {pristine, reset, submitting, modalShowing, modalOpen, handleClose, onSubmit, formData, sensors} = this.props;
+    const {pristine, reset, submitting, modalShowing, modalOpen, handleClose, onSubmit, formData, sensors,facebooknum,notiftype} = this.props;
     const actions = [
       <FlatButton
         label="Cancel"
@@ -95,6 +135,8 @@ class notifForm extends Component {
     );
 
     let sensorList = sensors.map((s) =>  <MenuItem value={s.id} primaryText={s.id} />) 
+    
+
     let attrsList = () => {
        var attrsList = []
        for(let s of this.props.sensors) {
@@ -138,7 +180,8 @@ class notifForm extends Component {
                     {sensorList}
                 </Field>
                 <Field name="attrs"
-                  component={SelectField}
+                 component={SelectField}
+                 
                   multiple={true}
                   hintText="attributes"
                   floatingLabelText="Attributes"
@@ -155,6 +198,56 @@ class notifForm extends Component {
                   ref="expression" withRef>
                 </Field>
               </Row>
+
+              <Row>
+<fieldset  >
+<legend  > Facebook Information</legend  >
+  <Field name="facebooknum" 
+                component={TextField}
+                fullWidth={false}
+                  hintText="facebook number"
+                  ref="facebooknum" withRef>
+                </Field>
+
+                <Field name="facebookuserID" 
+                component={TextField}
+                fullWidth={false}
+                  hintText="facebook ID"
+                  ref="facebookuserID" withRef>
+                </Field>
+
+  </fieldset>
+ </Row>
+  
+  <Row>
+  
+  
+                <Field name="notiftype"
+                
+                 component={SelectField}
+             
+                  fullWidth={false}
+                 hintText="Select A Notification Type"
+               
+                 floatingLabelText="Select A Notification Type"
+                  ref="notiftype" withRef 
+                 onChange={this.handleChange}
+                  >
+                  
+           
+
+             
+                    
+         <MenuItem value={1} primaryText="Facebook" />
+          <MenuItem value={2} primaryText="Sms" />
+            
+             </Field>
+              </Row>
+
+        
+
+                 
+              
               <Row>
                 <Field name="url"
                   component={TextField}
@@ -162,6 +255,15 @@ class notifForm extends Component {
                   hintText="URL"
                   floatingLabelText="URL"
                   ref="url" withRef>
+                </Field>
+              </Row>
+               <Row>
+                <Field name="qs"
+                  component={TextField}
+                  fullWidth={true}
+                  hintText="QS"
+                  floatingLabelText="QS"
+                  ref="qs" withRef>
                 </Field>
               </Row>
               <Row>
@@ -208,18 +310,25 @@ notifForm = reduxForm({
   form: 'notifForm',
   enableReinitialize : true, 
 })(notifForm)
-
-notifForm = connect(
+const selector = formValueSelector('notifForm')
+const notifValue={}
+const values={}
+ // const firstNameValue = selector(state, 'firstName')
+ notifForm = connect(
   state => ({
+    values: getFormValues('notifForm')(state),
+     facebooknum:selector(state, 'facebooknum'),
+    notiftype:selector(state, 'notiftype'),
+   
     initialValues:{
         desc: "Send XXX when YYY",
         sensors: [],
         attrs: [], 
         expr: "SM1>400", 
-        url: "https://api.plivo.com/v1/Account/MAMDA5ZDJIMDM1NZVMZD/Message/", 
+       facebooknum:'',
+      
         headers: [{ key: "Content-type",  value: "application/json"}, 
                   { key: "Authorization", value: "Basic TUFNREE1WkRKSU1ETTFOWlZNWkQ6TnpSbE5XSmlObVUyTW1GallXSmxPRGhsTlRrM01Ua3laR0V6TnpJeQ=="}],
-        payload: "{ \"src\": \"00393806412092\", \"dst\": \"00393806412093\", \"text\": \"WaterSense: Field is too dry. ${id} humidity value is ${SM1} \"}", 
         expires: new Date("2040-05-24T20:00:00.00Z"), 
         throttling: 1, 
     }
